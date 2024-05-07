@@ -10,6 +10,9 @@ jobs:
   spack-install:
     runs-on: ubuntu-${{ matrix.ubuntu-version }}
 
+    permissions:
+      packages: write
+
     defaults:
       run:
         shell: bash
@@ -71,7 +74,7 @@ jobs:
 
           source spack/share/spack/setup-env.sh
           spack compiler find
-          ${{ matrix.spack-config.add-mirror }} local-buildcache oci://ghcr.io/boeschf/spack-buildcache-${{ matrix.spack-config.version }}
+          ${{ matrix.spack-config.add-mirror }} local-buildcache oci://ghcr.io/boeschf/spack-buildcache-ubuntu-${{ matrix.ubuntu-version }}-spack-${{ matrix.spack-config.version }}
           spack repo add .
           spack reindex
 
