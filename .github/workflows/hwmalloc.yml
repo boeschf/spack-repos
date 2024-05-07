@@ -24,13 +24,13 @@ jobs:
             version:    'v0.21.2',
             add-mirror: 'spack mirror add',
             install:    'spack install --no-check-signature',
-            push-buildcache:    'spack buildcache push --unsigned',
+            push-buildcache:    'spack buildcache push',
           }
         - {
             version:    'develop',
             add-mirror: 'spack mirror add --unsigned',
             install:    'spack install',
-            push-buildcache:    'spack buildcache push --unsigned',
+            push-buildcache:    'spack buildcache push',
           }
 
       fail-fast: false
@@ -71,7 +71,7 @@ jobs:
 
           source spack/share/spack/setup-env.sh
           spack compiler find
-          ${{ matrix.spack-config.add-mirror }} local-buildcache oci://ghcr.io/boeschf/spack-buildcache
+          ${{ matrix.spack-config.add-mirror }} local-buildcache oci://ghcr.io/boeschf/spack-buildcache-${{ matrix.spack-config.version }}
           spack repo add .
           spack reindex
 
@@ -88,4 +88,4 @@ jobs:
         run: |
           source spack/share/spack/setup-env.sh
           spack mirror set --push --oci-username ${{ github.actor }} --oci-password "${{ secrets.GITHUB_TOKEN }}" local-buildcache
-          ${{ matrix.spack-config.push-buildcache }} --base-image ubuntu:${{ matrix.ubuntu-version }} --update-index --only dependencies local-buildcache hwmalloc@${{ matrix.version }}
+          ${{ matrix.spack-config.push-buildcache }} --base-image ubuntu:${{ matrix.ubuntu-version }} --unsigned --update-index --only dependencies local-buildcache hwmalloc@${{ matrix.version }}
