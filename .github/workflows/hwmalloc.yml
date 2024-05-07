@@ -8,17 +8,72 @@ on:
 
 jobs:
   spack-install:
-    runs-on: ubuntu-latest
-    container: boeschf/ghex-org
+    runs-on: ubuntu-${{ matrix.ubuntu-version }}
+
     defaults:
       run:
         shell: bash
+
+    strategy:
+      matrix:
+        ubuntu-version: ['22.04']
+        spack-version: ['v0.21.2', 'develop']
+        micro-arch: ['x86_64_v3']
+        version: ['0.2.0', '0.3.0']
+
+      fail-fast: false
+
+    env:
+      SPACK_DISABLE_LOCAL_CONFIG:     "true"
+      SPACK_USER_CACHE_PATH:          "/tmp/spack"
+
     steps:
-      - name: checkout
-        uses: actions/checkout@v3
-      - name: build and test
+
+      - name: install additional ubuntu packages
         run: |
-          . /opt/spack/share/spack/setup-env-clean.sh
-          spack repo add .
-          spack spec -I hwmalloc
-          spack install --test=root --verbose --show-log-on-error hwmalloc
+          sudo apt-get update -qq
+          sudo apt-get install -y gfortran
+
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: clone spack
+        run: git clone -c feature.manyFiles=true --depth 1 --branch ${{ matrix.spack-version }} https://github.com/spack/spack.git spack
+
+      - name: initialize spack and add online buildcache
+        run: |
+          cat <<EOF > spack/etc/spack/config.yaml
+          config:
+            install_tree:
+              padded_length: 128
+            build_jobs: 4
+          EOF
+
+          cat <<EOF > spack/etc/spack/packages.yaml
+          packages:
+            all:
+              require:
+              - 'target=${{ matrix.micro-arch }}'
+              - '%gcc'
+          EOF
+
+          source spack/share/spack/setup-env.sh
+          spack compiler find
+          spack mirror add --unsigned local-buildcache oci://ghcr.io/boeschf/spack-buildcache
+          spack repo add repos
+          spack reindex
+
+      - name: build-and-test
+        run: |
+          source spack/share/spack/setup-env.sh
+          # print dependencies
+          spack spec -I hwmalloc@${{ matrix.version }}
+          # install package
+          spack install --test=root --verbose --show-log-on-error hwmalloc@${{ matrix.version }}
+
+      - name: Push packages and update index
+        continue-on-error: true
+        run: |
+          source spack/share/spack/setup-env.sh
+          spack mirror set --push --oci-username ${{ github.actor }} --oci-password "${{ secrets.GITHUB_TOKEN }}" local-buildcache
+          spack buildcache push --base-image ubuntu:${{ matrix.ubuntu-version }} --unsigned --update-index --only dependencies local-buildcache hwmalloc@develop
