@@ -17,9 +17,21 @@ jobs:
     strategy:
       matrix:
         ubuntu-version: ['22.04']
-        spack-version: ['v0.21.2', 'develop']
         micro-arch: ['x86_64_v3']
         version: ['0.2.0', '0.3.0']
+        spack-config:
+        - {
+            version:    'v0.21.2',
+            add-mirror: 'spack mirror add',
+            install:    'spack install --no-check-signature',
+            push-buildcache:    'spack buildcache push --unsigned',
+          }
+        - {
+            version:    'develop',
+            add-mirror: 'spack mirror add --unsigned',
+            install:    'spack install',
+            push-buildcache:    'spack buildcache push --unsigned',
+          }
 
       fail-fast: false
 
@@ -38,7 +50,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: clone spack
-        run: git clone -c feature.manyFiles=true --depth 1 --branch ${{ matrix.spack-version }} https://github.com/spack/spack.git spack
+        run: git clone -c feature.manyFiles=true --depth 1 --branch ${{ matrix.spack-config.version }} https://github.com/spack/spack.git spack
 
       - name: initialize spack and add online buildcache
         run: |
@@ -59,7 +71,7 @@ jobs:
 
           source spack/share/spack/setup-env.sh
           spack compiler find
-          spack mirror add --unsigned local-buildcache oci://ghcr.io/boeschf/spack-buildcache
+          ${{ matrix.spack-config.add-mirror }} local-buildcache oci://ghcr.io/boeschf/spack-buildcache
           spack repo add .
           spack reindex
 
@@ -69,11 +81,11 @@ jobs:
           # print dependencies
           spack spec -I hwmalloc@${{ matrix.version }}
           # install package
-          spack install --test=root --verbose --show-log-on-error hwmalloc@${{ matrix.version }}
+          ${{ matrix.spack-config.install }} --test=root --verbose --show-log-on-error hwmalloc@${{ matrix.version }}
 
       - name: Push packages and update index
         continue-on-error: true
         run: |
           source spack/share/spack/setup-env.sh
           spack mirror set --push --oci-username ${{ github.actor }} --oci-password "${{ secrets.GITHUB_TOKEN }}" local-buildcache
-          spack buildcache push --base-image ubuntu:${{ matrix.ubuntu-version }} --unsigned --update-index --only dependencies local-buildcache hwmalloc@develop
+          ${{ matrix.spack-config.push-buildcache }} --base-image ubuntu:${{ matrix.ubuntu-version }} --update-index --only dependencies local-buildcache hwmalloc@${{ matrix.version }}

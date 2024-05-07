@@ -23,7 +23,8 @@ class Hwmalloc(CMakePackage, CudaPackage, ROCmPackage):
     variant("numa-local", default=True, description="Use numa_tools for local node allocations")
     variant("logging", default=False, description="print logging info to cerr")
 
-    patch("cmake_install_path.patch", when="@:0.3.0", level=1)
+    patch("cmake_install_path.patch", when="@0.3.0", level=1)
+    patch("cmake_install_path_v0.2.0.patch", when="@0.2.0", level=1)
 
     def cmake_args(self):
         args = [
