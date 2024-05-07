@@ -60,7 +60,7 @@ jobs:
           source spack/share/spack/setup-env.sh
           spack compiler find
           spack mirror add --unsigned local-buildcache oci://ghcr.io/boeschf/spack-buildcache
-          spack repo add repos
+          spack repo add .
           spack reindex
 
       - name: build-and-test
