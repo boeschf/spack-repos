@@ -35,6 +35,22 @@ jobs:
             install:    'spack install',
             push-buildcache:    'spack buildcache push',
           }
+        variant:
+        - {
+            name: 'cpu',
+            test: '--test=root',
+            spec: '',
+          }
+        - {
+            name: 'cuda',
+            test: '',
+            spec: '+cuda',
+          }
+        - {
+            name: 'rocm',
+            test: '',
+            spec: '+rocm',
+          }
 
       fail-fast: false
 
@@ -82,13 +98,13 @@ jobs:
         run: |
           source spack/share/spack/setup-env.sh
           # print dependencies
-          spack spec -I hwmalloc@${{ matrix.version }}
+          spack spec -I hwmalloc@${{ matrix.version }} ${{ matrix.variant.spec }}
           # install package
-          ${{ matrix.spack-config.install }} --test=root --verbose --show-log-on-error hwmalloc@${{ matrix.version }}
+        ${{ matrix.spack-config.install }} ${{ matrix.variant.test }} --verbose --show-log-on-error hwmalloc@${{ matrix.version }} ${{ matrix.variant.spec }}
 
       - name: Push packages and update index
         continue-on-error: true
         run: |
           source spack/share/spack/setup-env.sh
           spack mirror set --push --oci-username ${{ github.actor }} --oci-password "${{ secrets.GITHUB_TOKEN }}" local-buildcache
-          ${{ matrix.spack-config.push-buildcache }} --base-image ubuntu:${{ matrix.ubuntu-version }} --unsigned --update-index --only dependencies local-buildcache hwmalloc@${{ matrix.version }}
+          ${{ matrix.spack-config.push-buildcache }} --base-image ubuntu:${{ matrix.ubuntu-version }} --unsigned --update-index --only dependencies local-buildcache hwmalloc@${{ matrix.version }} ${{ matrix.variant.spec }}
