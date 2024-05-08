@@ -100,7 +100,7 @@ jobs:
           # print dependencies
           spack spec -I hwmalloc@${{ matrix.version }} ${{ matrix.variant.spec }}
           # install package
-        ${{ matrix.spack-config.install }} ${{ matrix.variant.test }} --verbose --show-log-on-error hwmalloc@${{ matrix.version }} ${{ matrix.variant.spec }}
+          ${{ matrix.spack-config.install }} ${{ matrix.variant.test }} --verbose --show-log-on-error hwmalloc@${{ matrix.version }} ${{ matrix.variant.spec }}
 
       - name: Push packages and update index
         continue-on-error: true
