@@ -3,8 +3,8 @@ name: test-hwmalloc
 on:
   push:
   pull_request:
-    branches:
-      - main
+    # branches:
+    #   - main
 
 jobs:
   spack-install:
